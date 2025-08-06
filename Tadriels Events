@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tadriels Events</title>
+    <style>
+        :root {
+            --pink: #FFC0CB;
+            --gold: #FFD700;
+            --blue: #1E90FF;
+            --black: #000000;
+            --white: #FFFFFF;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+            scroll-behavior: smooth;
+        }
+        body {
+            background-color: var(--white);
+            color: var(--black);
+            line-height: 1.6;
+        }
+        header {
+            background: var(--black);
+            color: var(--white);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        nav {
+            position: relative;
+        }
+        nav a {
+            color: var(--white);
+            text-decoration: none;
+            margin: 0 1rem;
+            font-weight: bold;
+        }
+        nav a:hover {
+            color: var(--gold);
+        }
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: var(--black);
+            min-width: 160px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1;
+            padding: 10px 0;
+            border-radius: 5px;
+        }
+        .dropdown-content a {
+            color: var(--white);
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            text-align: left;
+            margin: 0;
+        }
+        .dropdown-content a:hover {
+            background-color: var(--blue);
+            color: var(--white);
+        }
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+        .hero {
+            text-align: center;
+            padding: 5rem 2rem;
+            background: linear-gradient(to right, var(--pink), var(--blue));
+            color: var(--white);
+        }
+        .section {
+            padding: 4rem 2rem;
+            max-width: 1200px;
+            margin: auto;
+        }
+        .section h2 {
+            text-align: center;
+            margin-bottom: 2rem;
+            color: var(--black);
+        }
+        .categories {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+        }
+        .category {
+            border: 1px solid var(--gold);
+            border-radius: 10px;
+            padding: 1rem;
+            text-align: center;
+        }
+        .category h3 {
+            margin-bottom: 1rem;
+            color: var(--blue);
+        }
+        .product {
+            margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .product button {
+            background: var(--gold);
+            border: none;
+            color: var(--black);
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        .product button:hover {
+            background: var(--pink);
+            color: var(--white);
+        }
+        .about {
+            text-align: center;
+        }
+        .contact-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            max-width: 500px;
+            margin: auto;
+        }
+        input, button, textarea {
+            padding: 0.75rem;
+            border: 1px solid var(--black);
+            border-radius: 5px;
+        }
+        button.submit {
+            background: var(--blue);
+            color: var(--white);
+            border: none;
+            cursor: pointer;
+        }
+        button.submit:hover {
+            background: var(--gold);
+            color: var(--black);
+        }
+        .cart-summary {
+            margin-top: 2rem;
+            border: 1px solid var(--black);
+            padding: 1rem;
+            border-radius: 10px;
+        }
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        .cart-item button {
+            background-color: #dc3545;
+            color: var(--white);
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+            border-radius: 3px;
+        }
+        .gallery-container {
+            display: flex;
+            overflow-x: auto;
+            gap: 1rem;
+            padding-bottom: 1rem;
+        }
+        .gallery-container::-webkit-scrollbar {
+            height: 8px;
+        }
+        .gallery-container::-webkit-scrollbar-thumb {
+            background: var(--blue);
+            border-radius: 10px;
+        }
+        .gallery-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        .gallery-container img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 10px;
+            flex-shrink: 0;
+            object-fit: cover;
+            width: 300px;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/emailjs-com@2/dist/email.min.js"></script>
+    <script>
+        (function(){
+            emailjs.init("7jYqEhkLxexQnPO3z");
+        })();
+
+        let cart = [];
+
+        function addToCart(productName, productPrice) {
+            cart.push({ name: productName, price: productPrice });
+            updateCartSummary();
+        }
+
+        function removeFromCart(index) {
+            cart.splice(index, 1);
+            updateCartSummary();
+        }
+
+        function updateCartSummary() {
+            const cartDiv = document.getElementById('cart');
+            const totalDiv = document.getElementById('cart-total');
+            let total = 0;
+            
+            if (cart.length > 0) {
+                cartDiv.innerHTML = '';
+                cart.forEach((item, index) => {
+                    const itemDiv = document.createElement('div');
+                    itemDiv.classList.add('cart-item');
+                    itemDiv.innerHTML = `
+                        <span>${item.name} - $${item.price}</span>
+                        <button onclick="removeFromCart(${index})">Remove</button>
+                    `;
+                    cartDiv.appendChild(itemDiv);
+                    total += item.price;
+                });
+            } else {
+                cartDiv.innerHTML = 'Your cart is empty';
+            }
+            
+            totalDiv.textContent = `Total: $${total}`;
+        }
+
+        function placeOrder() {
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const phone = document.getElementById('phone').value;
+            
+            if (!name || !email || !phone || cart.length === 0) {
+                alert('Please fill all fields and add at least one product to cart.');
+                return;
+            }
+            
+            const orderDetails = cart.map(item => `${item.name} ($${item.price})`).join(', ');
+            
+            const templateParams = {
+                name: name,
+                email: email,
+                phone: phone,
+                order: orderDetails
+            };
+            
+            emailjs.send('service_bzuwfpo', 'template_pzsdi9s', templateParams)
+                .then(function() {
+                    alert('Order placed successfully! We will contact you to finalize the details.');
+                    cart = [];
+                    updateCartSummary();
+                    document.getElementById('order-form').reset();
+                }, function() {
+                    alert('Order not submitted, please try again.');
+                });
+        }
+    </script>
+</head>
+<body>
+    <header>
+        <h1>Tadriels Events</h1>
+        <nav>
+            <a href="#home">Home</a>
+            <a href="#about">About</a>
+            <div class="dropdown">
+                <a href="#services" class="dropbtn">Services</a>
+                <div class="dropdown-content">
+                    <a href="#balloons">Balloon Decor</a>
+                    <a href="#flowers">Flower & Backdrops</a>
+                    <a href="#tabletop">Tabletop & Linens</a>
+                    <a href="#lighting">Lighting & Effects</a>
+                    <a href="#kids">Kids’ Party Rentals</a>
+                    <a href="#luxury">Luxury Furniture</a>
+                    <a href="#planning">Planning & Coordination</a>
+                </div>
+            </div>
+            <a href="#gallery">Gallery</a>
+            <a href="#contact">Contact</a>
+        </nav>
+    </header>
+
+    <section id="home" class="hero">
+        <h2>Transforming Events into Timeless Memories</h2>
+        <p>Professional Event Planning & Rentals</p>
+    </section>
+
+    <section id="about" class="section about">
+        <h2>About Us</h2>
+        <p>Born from a passion for exquisite decorations and dream-chasing spirit, Tadriels Events brings elegance and creativity to every occasion. From planning to rentals, we curate events that leave lasting impressions.</p>
+    </section>
+
+    <section id="services" class="section">
+        <h2>Our Services</h2>
+        <div class="categories">
+            <!-- Categories with prices -->
+            <div class="category" id="balloons">
+                <h3>Balloon Decor</h3>
+                <div class="product">
+                    <span>Organic Balloon Garland <br><small>Starting at $150</small></span>
+                    <button onclick="addToCart('Organic Balloon Garland', 150)">Add to Cart</button>
+                </div>
+                <div class="product">
+                    <span>Jumbo Helium Balloons <br><small>Starting at $30</small></span>
+                    <button onclick="addToCart('Jumbo Helium Balloons', 30)">Add to Cart</button>
+                </div>
+                <div class="product">
+                    <span>Balloon Arch <br><small>Starting at $120</small></span>
+                    <button onclick="addToCart('Balloon Arch', 120)">Add to Cart</button>
+                </div>
+                <div class="product">
+                    <span>Balloon Wall <br><small>Starting at $250</small></span>
+                    <button onclick="addToCart('Balloon Wall', 250)">Add to Cart</button>
+                </div>
+                <div class="product">
+                    <span>Confetti Balloons <br><small>Starting at $25</small></span>
+                    <button onclick="addToCart('Confetti Balloons', 25)">Add to Cart</button>
+                </div>
+                <div class="product">
+                    <span>Ceiling Balloons <br><small>Starting at $100</small></span>
+                    <button onclick="addToCart('Ceiling Balloons', 100)">Add to Cart</button>
+                </div>
+            </div>
+            <div class="category" id="flowers">
+                <h3>Flower & Backdrops</h3>
+                <div class="product">
+                    <span>Artificial Flower Wall <br><small>Starting at $200</small></span>
+                    <button onclick="addToCart('Artificial Flower Wall', 200)">Add to Cart</button>
+                </div>
+                <div class="product">
+                    <span>Fresh Flower Wall <br><small>Starting at $500</small></span>
+                    <button onclick="addToCart('Fresh Flower Wall', 500)">Add to Cart</button>
+                </div>
+                <div class="product">
+                    <span>Sequin Backdrop <br><small>Starting at $150</small></span>
+                    <button onclick="addToCart('Sequin Backdrop', 150)">Add to Cart</button>
+                </div>
+                <div class="product">
+                    <span>Greenery Wall <br><small>Starting at $200</small></span>
+                    <button onclick="addToCart('Greenery Wall', 200)">Add to Cart</button>
+                </div>
+                <div class="product">
+                    <span>Themed Backdrop <br><small>Starting at $180</small></span>
+                    <button onclick="addToCart('Themed Backdrop', 180)">Add to Cart</button>
+                </div>
+                <div class="product">
+                    <span>Neon Sign Backdrop <br><small>Starting at $220</small></span>
+                    <button onclick="addToCart('Neon Sign Backdrop', 220)">Add to Cart</button>
+                </div>
+            </div>
+            <div class="category" id="tabletop">
+                <h3>Tabletop & Linens</h3>
+                <div class="product">
+                    <span>Chiavari Chairs (per chair) <br><small>Starting at $8</small></span>
+                    <button onclick="addToCart('Chiavari Chairs', 8)">Add to Cart</button>
+                </div>
+                <div class="product">
+                    <span>Charger Plates (per plate) <br><small>Starting at $2</small></span>
+                    <button onclick="addToCart('Charger Plates', 2)">Add to Cart</button>
+                </div>
+                <div class="product">
+                    <span>Luxury Table Runners <br><small>Starting at $15</small></span>
+                    <button onclick="addToCart('Luxury Table Runners', 15)">Add to Cart</button>
+                </div>
+                <div class="product">
+                    <span>Sequin Tablecloths <br><small>Starting at $30</small></span>
+                    <button onclick="addToCart('Sequin Tablecloths', 30)">Add to Cart</button>
+                </div>
+                <div class="product">
+                    <span>Acrylic Table Numbers (per set) <br><small>Starting at $10</small></span>
+                    <button onclick="addToCart('Acrylic Table Numbers', 10)">Add to Cart</button>
+                </div>
+                <div class="product">
+                    <span>Gold Cutlery Set (per person) <br><small>Starting at $5</small></span>
+                    <button onclick="addToCart('Gold Cutlery Set', 5)">Add to Cart</button>
+                </div>
+            </div>
+            <div class="category" id="lighting">
+                <h3>Lighting & Effects</h3>
+                <div class="product">
+                    <span>LED Uplighting (per light) <br><small>Starting at $25</small></span>
+                    <button onclick="addToCart('LED Uplighting', 25)">Add to Cart</button>
+                </div>
+                <div class="product">
+                    <span>Fairy Light Curtain <br><small>Starting at $100</small></span>
+                    <button onclick="addToCart('Fairy Light Curtain', 100)">Add to Cart</button>
+                </div>
+                <div class="product">
+                    <span>Marquee Letters (per letter) <br><small>Starting at $50</small></span>
+                    <button onclick="addToCart('Marquee Letters', 50)">Add to Cart</button>
+                </div>
+                <div class="product">
+                    <span>Dance Floor Lighting <br><small>Starting at $250</small></span>
+                    <button onclick="addToCart('Dance Floor Lighting', 250)">Add to Cart</button>
+                </div>
+                <div class="product">
+                    <span>Fog Machine <br><small>Starting at $75</small></span>
+                    <button onclick="addToCart('Fog Machine', 75)">Add to Cart</button>
+                </div>
+                <div class="product">
+                    <span>Sparkler Fountains (per unit) <br><small>Starting at $40</small></span>
+                    <button onclick="addToCart('Sparkler Fountains', 40)">Add to Cart</button>
+                </div>
+            </div>
+            <div class="category" id="kids">
+                <h3>Kids’ Party Rentals</h3>
+                <div class="product">
+                    <span>Soft Play Set <br><small>Starting at $200</small></span>
+                    <button onclick="addToCart('Soft Play Set', 200)">Add to Cart</button>
+                </div>
+                <div class="product">
+                    <span>Kids’ Chiavari Chairs (per chair) <br><small>Starting at $5</small></span>
+                    <button onclick="addToCart('Kids’ Chiavari Chairs', 5)">Add to Cart</button>
+                </div>
+                <div class="product">
+                    <span>Bouncy Castle <br><small>Starting at $150</small></span>
+                    <button onclick="addToCart('Bouncy Castle', 150)">Add to Cart</button>
+                </div>
+                <div class="product">
+                    <span>Character Cutouts <br><small>Starting at $40</small></span>
+                    <button onclick="addToCart('Character Cutouts', 40)">Add to Cart</button>
+                </div>
+                <div class="product">
+                    <span>Kids’ Picnic Table Set <br><small>Starting at $75</small></span>
+                    <button onclick="addToCart('Kids’ Picnic Table Set', 75)">Add to Cart</button>
+                </div>
+                <div class="product">
+                    <span>Themed Party Props <br><small>Starting at $60</small></span>
+                    <button onclick="addToCart('Themed Party Props', 60)">Add to Cart</button>
+                </div>
+            </div>
+            <div class="category" id="luxury">
+                <h3>Luxury Furniture</h3>
+                <div class="product">
+                    <span>Throne Chairs (per chair) <br><small>Starting at $100</small></span>
+                    <button onclick="addToCart('Throne Chairs', 100)">Add to Cart</button>
+                </div>
+                <div class="product">
+                    <span>Velvet Lounge Sofa <br><small>Starting at $250</small></span>
+                    <button onclick="addToCart('Velvet Lounge Sofa', 250)">Add to Cart</button>
+                </div>
+                <div class="product">
+                    <span>Coffee Table with Gold Trim <br><small>Starting at $80</small></span>
+                    <button onclick="addToCart('Coffee Table with Gold Trim', 80)">Add to Cart</button>
+                </div>
+                <div class="product">
+                    <span>Acrylic Display Stands (per stand) <br><small>Starting at $30</small></span>
+                    <button onclick="addToCart('Acrylic Display Stands', 30)">Add to Cart</button>
+                </div>
+                <div class="product">
+                    <span>Gold Bar Cart <br><small>Starting at $90</small></span>
+                    <button onclick="addToCart('Gold Bar Cart', 90)">Add to Cart</button>
+                </div>
+                <div class="product">
+                    <span>Cocktail Tables (per table) <br><small>Starting at $50</small></span>
+                    <button onclick="addToCart('Cocktail Tables', 50)">Add to Cart</button>
+                </div>
+            </div>
+            <div class="category" id="planning">
+                <h3>Planning & Coordination</h3>
+                <div class="product">
+                    <span>Day-of Coordination <br><small>Starting at $800</small></span>
+                    <button onclick="addToCart('Day-of Coordination', 800)">Add to Cart</button>
+                </div>
+                <div class="product">
+                    <span>Full Event Planning <br><small>Starting at $2500</small></span>
+                    <button onclick="addToCart('Full Event Planning', 2500)">Add to Cart</button>
+                </div>
+                <div class="product">
+                    <span>Partial Event Planning <br><small>Starting at $1500</small></span>
+                    <button onclick="addToCart('Partial Event Planning', 1500)">Add to Cart</button>
+                </div>
+                <div class="product">
+                    <span>Corporate Event Management <br><small>Starting at $3000</small></span>
+                    <button onclick="addToCart('Corporate Event Management', 3000)">Add to Cart</button>
+                </div>
+                <div class="product">
+                    <span>Wedding Management Package <br><small>Starting at $2000</small></span>
+                    <button onclick="addToCart('Wedding Management Package', 2000)">Add to Cart</button>
+                </div>
+                <div class="product">
+                    <span>Birthday Planning Package <br><small>Starting at $1000</small></span>
+                    <button onclick="addToCart('Birthday Planning Package', 1000)">Add to Cart</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+    <section>
+    <h2>Gallery</h2>
+    <p> Coming soon... </p>
+
+
+
+
+
+    <section id="contact" class="section">
+        <h2>Contact & Order</h2>
+        <form id="order-form" class="contact-form" onsubmit="event.preventDefault(); placeOrder();">
+            <p>Name</p>
+            <input type="text" id="name" name="name">
+            <p>Email</p>
+            <input type="email" id="email" name="email">
+            <p>Phone</p>
+            <input type="tel" id="phone" name="phone">
+            <div class="cart-summary">
+                <h3>Your Cart</h3>
+                <div id="cart">Your cart is empty</div>
+                <hr>
+                <div id="cart-total">Total: $0</div>
+            </div>
+            <button type="submit" class="submit">Place Order</button>
+        </form>
+    </section>
+</body>
+</html>
+
