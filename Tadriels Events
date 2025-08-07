@@ -1,11 +1,59 @@
-import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, X, MessageCircle, Quote } from 'lucide-react';
+import React, { useState, useEffect, createContext, useContext, useRef } from 'react';
+import { ChevronLeft, ChevronRight, X, MessageCircle, Quote, ShoppingCart } from 'lucide-react';
+
+// --- Context for Shopping Cart ---
+const CartContext = createContext();
+
+const CartProvider = ({ children }) => {
+  const [cartItems, setCartItems] = useState([]);
+
+  // Function to add an item to the cart
+  const addItemToCart = (item) => {
+    setCartItems((prevItems) => {
+      // Check if item already exists in cart, if so, just update quantity
+      const existingItem = prevItems.find((cartItem) => cartItem.id === item.id);
+      if (existingItem) {
+        return prevItems.map((cartItem) =>
+          cartItem.id === item.id ? { ...cartItem, quantity: cartItem.quantity + 1 } : cartItem
+        );
+      }
+      // Otherwise, add new item
+      return [...prevItems, { ...item, quantity: 1 }];
+    });
+  };
+
+  // Function to remove an item from the cart
+  const removeItemFromCart = (itemId) => {
+    setCartItems((prevItems) => prevItems.filter((item) => item.id !== itemId));
+  };
+
+  // Function to clear the entire cart
+  const clearCart = () => {
+    setCartItems([]);
+  };
+
+  // Calculate total price
+  const total = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+  const totalItems = cartItems.reduce((acc, item) => acc + item.quantity, 0);
+
+  return (
+    <CartContext.Provider value={{ cartItems, addItemToCart, removeItemFromCart, clearCart, total, totalItems }}>
+      {children}
+    </CartContext.Provider>
+  );
+};
+
+// Custom hook to use the cart context
+const useCart = () => {
+  return useContext(CartContext);
+};
 
 // Main App component that acts as the single-page application router
 function App() {
   const [currentPage, setCurrentPage] = useState('home');
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
+  const [isCartModalOpen, setIsCartModalOpen] = useState(false);
 
   // Function to render the correct page component based on state
   const renderPage = () => {
@@ -26,87 +74,111 @@ function App() {
   };
 
   return (
-    <div className="font-sans antialiased text-gray-800 bg-white min-h-screen flex flex-col">
-      {/* Header and Navigation Bar */}
-      <header className="fixed top-0 left-0 w-full z-50 bg-white bg-opacity-90 shadow-md">
-        <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-indigo-700">Tadriels Event Planning</h1>
-          <nav className="hidden md:flex space-x-6">
-            <NavItem page="home" currentPage={currentPage} setCurrentPage={setCurrentPage}>Home</NavItem>
-            <NavItem page="about" currentPage={currentPage} setCurrentPage={setCurrentPage}>About Us</NavItem>
-            <NavItem page="services" currentPage={currentPage} setCurrentPage={setCurrentPage}>Services</NavItem>
-            <NavItem page="gallery" currentPage={currentPage} setCurrentPage={setCurrentPage}>Gallery</NavItem>
-            <NavItem page="contact" currentPage={currentPage} setCurrentPage={setCurrentPage}>Contact Us</NavItem>
-          </nav>
-          {/* Mobile menu button */}
-          <button className="md:hidden text-gray-600">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" />
-            </svg>
-          </button>
-        </div>
-      </header>
-
-      {/* Main Content Area */}
-      <main className="flex-grow pt-16">
-        {renderPage()}
-      </main>
-
-      {/* Live Chat and Get a Code Buttons */}
-      <div className="fixed bottom-6 right-6 flex flex-col items-end space-y-4 z-40">
-        <button
-          onClick={() => setIsQuoteModalOpen(true)}
-          className="flex items-center justify-center p-4 bg-indigo-600 text-white rounded-full shadow-lg hover:bg-indigo-700 transition duration-300 transform hover:scale-105"
-          aria-label="Get a Quote"
-        >
-          <Quote size={24} />
-        </button>
-
-        <button
-          onClick={() => setIsChatOpen(!isChatOpen)}
-          className="flex items-center justify-center p-4 bg-white text-indigo-600 rounded-full shadow-lg hover:bg-gray-100 transition duration-300 transform hover:scale-105"
-          aria-label="Toggle Live Chat"
-        >
-          <MessageCircle size={24} />
-        </button>
-      </div>
-
-      {/* Live Chat UI */}
-      {isChatOpen && <LiveChatBox onClose={() => setIsChatOpen(false)} />}
-      
-      {/* Quote Modal */}
-      {isQuoteModalOpen && (
-        <Modal onClose={() => setIsQuoteModalOpen(false)}>
-          <div className="p-6 bg-white rounded-xl shadow-lg w-full max-w-md">
-            <h3 className="text-xl font-semibold text-gray-800 mb-4">Get a Quote</h3>
-            <p className="text-gray-600 mb-6">
-              Thank you for your interest! Please contact us directly at <a href="mailto:tadriels24@gmail.com" className="text-indigo-600 hover:underline">tadriels24@gmail.com</a>
-              or fill out the contact form on our Contact Us page to receive a personalized quote for your event.
-            </p>
-            <div className="flex justify-end">
-              <button
-                onClick={() => setIsQuoteModalOpen(false)}
-                className="px-4 py-2 text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition"
-              >
-                Close
+    <CartProvider>
+      <div className="font-sans antialiased text-gray-800 bg-white min-h-screen flex flex-col">
+        {/* Header and Navigation Bar */}
+        <header className="fixed top-0 left-0 w-full z-50 bg-white bg-opacity-90 shadow-md">
+          <div className="container mx-auto px-4 py-3 flex justify-between items-center">
+            <h1 className="text-2xl font-bold text-indigo-700">Tadriels Event Planning</h1>
+            <nav className="hidden md:flex space-x-6 items-center">
+              <NavItem page="home" currentPage={currentPage} setCurrentPage={setCurrentPage}>Home</NavItem>
+              <NavItem page="about" currentPage={currentPage} setCurrentPage={setCurrentPage}>About Us</NavItem>
+              <NavItem page="services" currentPage={currentPage} setCurrentPage={setCurrentPage}>Services</NavItem>
+              <NavItem page="gallery" currentPage={currentPage} setCurrentPage={setCurrentPage}>Gallery</NavItem>
+              <NavItem page="contact" currentPage={currentPage} setCurrentPage={setCurrentPage}>Contact Us</NavItem>
+              <CartButton onClick={() => setIsCartModalOpen(true)} />
+            </nav>
+            {/* Mobile menu button */}
+            <div className="flex items-center md:hidden">
+              <CartButton onClick={() => setIsCartModalOpen(true)} className="mr-4" />
+              <button className="text-gray-600">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" />
+                </svg>
               </button>
             </div>
           </div>
-        </Modal>
-      )}
+        </header>
 
-      {/* Footer */}
-      <footer className="bg-gray-900 text-white py-8">
-        <div className="container mx-auto px-4 text-center">
-          <p className="text-gray-400">&copy; 2024 Tadriels Event Planning & Rentals. All rights reserved.</p>
-          <p className="text-sm mt-2">
-            Email: <a href="mailto:tadriels24@gmail.com" className="text-indigo-400 hover:underline">tadriels24@gmail.com</a>
-          </p>
+        {/* Main Content Area */}
+        <main className="flex-grow pt-16">
+          {renderPage()}
+        </main>
+
+        {/* Live Chat and Get a Code Buttons */}
+        <div className="fixed bottom-6 right-6 flex flex-col items-end space-y-4 z-40">
+          <button
+            onClick={() => setIsQuoteModalOpen(true)}
+            className="flex items-center justify-center p-4 bg-indigo-600 text-white rounded-full shadow-lg hover:bg-indigo-700 transition duration-300 transform hover:scale-105"
+            aria-label="Get a Quote"
+          >
+            <Quote size={24} />
+          </button>
+
+          <button
+            onClick={() => setIsChatOpen(!isChatOpen)}
+            className="flex items-center justify-center p-4 bg-white text-indigo-600 rounded-full shadow-lg hover:bg-gray-100 transition duration-300 transform hover:scale-105"
+            aria-label="Toggle Live Chat"
+          >
+            <MessageCircle size={24} />
+          </button>
         </div>
-      </footer>
-    </div>
+
+        {/* Live Chat UI */}
+        {isChatOpen && <LiveChatBox onClose={() => setIsChatOpen(false)} />}
+        
+        {/* Quote Modal */}
+        {isQuoteModalOpen && (
+          <Modal onClose={() => setIsQuoteModalOpen(false)}>
+            <div className="p-6 bg-white rounded-xl shadow-lg w-full max-w-md">
+              <h3 className="text-xl font-semibold text-gray-800 mb-4">Get a Quote</h3>
+              <p className="text-gray-600 mb-6">
+                Thank you for your interest! Please contact us directly at <a href="mailto:tadriels24@gmail.com" className="text-indigo-600 hover:underline">tadriels24@gmail.com</a>
+                or fill out the contact form on our Contact Us page to receive a personalized quote for your event.
+              </p>
+              <div className="flex justify-end">
+                <button
+                  onClick={() => setIsQuoteModalOpen(false)}
+                  className="px-4 py-2 text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </Modal>
+        )}
+
+        {/* Cart Modal */}
+        {isCartModalOpen && <CartModal onClose={() => setIsCartModalOpen(false)} />}
+
+        {/* Footer */}
+        <footer className="bg-gray-900 text-white py-8">
+          <div className="container mx-auto px-4 text-center">
+            <p className="text-gray-400">&copy; 2024 Tadriels Event Planning & Rentals. All rights reserved.</p>
+            <p className="text-sm mt-2">
+              Email: <a href="mailto:tadriels24@gmail.com" className="text-indigo-400 hover:underline">tadriels24@gmail.com</a>
+            </p>
+          </div>
+        </footer>
+      </div>
+    </CartProvider>
   );
 }
+
+// Cart Button component
+const CartButton = ({ onClick, className = '' }) => {
+  const { totalItems } = useCart();
+  return (
+    <button onClick={onClick} className={`relative p-2 text-gray-600 hover:text-indigo-600 transition ${className}`}>
+      <ShoppingCart size={24} />
+      {totalItems > 0 && (
+        <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-100 transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
+          {totalItems}
+        </span>
+      )}
+    </button>
+  );
+};
 
 // Reusable Navigation Item component
 const NavItem = ({ page, currentPage, setCurrentPage, children }) => (
@@ -139,6 +211,72 @@ const Modal = ({ children, onClose }) => {
     </div>
   );
 };
+
+// Cart Modal Component
+const CartModal = ({ onClose }) => {
+  const { cartItems, removeItemFromCart, clearCart, total } = useCart();
+
+  const handleCheckout = () => {
+    // Placeholder for a real checkout process.
+    // In a real app, this would redirect to a payment page or send an order.
+    // Instead of alert(), use a custom modal for user feedback in a real app.
+    alert("This would trigger a checkout process!");
+    clearCart();
+    onClose();
+  };
+
+  return (
+    <Modal onClose={onClose}>
+      <div className="bg-white rounded-xl shadow-lg w-full max-w-md md:max-w-lg lg:max-w-xl p-6 relative">
+        <button onClick={onClose} className="absolute top-4 right-4 p-2 rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition">
+          <X size={20} />
+        </button>
+        <h3 className="text-2xl font-bold text-gray-800 mb-6">Your Cart</h3>
+        {cartItems.length === 0 ? (
+          <p className="text-gray-600 text-center">Your cart is empty.</p>
+        ) : (
+          <div className="space-y-4">
+            {cartItems.map((item) => (
+              <div key={item.id} className="flex items-center justify-between border-b pb-4">
+                <div>
+                  <h4 className="font-semibold">{item.name}</h4>
+                  <p className="text-sm text-gray-500">${item.price.toFixed(2)} x {item.quantity}</p>
+                </div>
+                <button
+                  onClick={() => removeItemFromCart(item.id)}
+                  className="text-red-500 hover:text-red-700 transition"
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+            <div className="pt-4 border-t-2 border-dashed">
+              <div className="flex justify-between items-center font-bold text-lg text-gray-800">
+                <span>Total:</span>
+                <span>${total.toFixed(2)}</span>
+              </div>
+            </div>
+            <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-4 mt-6">
+              <button
+                onClick={handleCheckout}
+                className="w-full px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition duration-300"
+              >
+                Checkout
+              </button>
+              <button
+                onClick={clearCart}
+                className="w-full px-6 py-3 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300 transition duration-300"
+              >
+                Clear Cart
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </Modal>
+  );
+};
+
 
 // --- Home Page ---
 const Home = () => {
@@ -280,98 +418,118 @@ const AboutUs = () => (
 // --- Services Page ---
 const servicesData = [
   {
+    id: "event-planning-packages",
     category: "Event Planning Packages",
     items: [
-      "Full-Service Planning",
-      "Partial Planning",
-      "Day-of Coordination",
-      "A La Carte Services",
-      "Consultation & Budgeting",
-      "Vendor Management",
-      "Timeline Creation",
+      { id: "full-service-planning", name: "Full-Service Planning", price: 1500.00 },
+      { id: "partial-planning", name: "Partial Planning", price: 800.00 },
+      { id: "day-of-coordination", name: "Day-of Coordination", price: 500.00 },
+      { id: "a-la-carte-services", name: "A La Carte Services", price: 100.00 },
+      { id: "consultation-budgeting", name: "Consultation & Budgeting", price: 200.00 },
+      { id: "vendor-management", name: "Vendor Management", price: 300.00 },
+      { id: "timeline-creation", name: "Timeline Creation", price: 150.00 },
     ],
   },
   {
+    id: "decor-design",
     category: "Decor & Design",
     items: [
-      "Custom Backdrops",
-      "Floral Arrangements",
-      "Table Settings",
-      "Centerpieces",
-      "Lighting & AV",
-      "Theme Development",
-      "Stage & Tent Decor",
+      { id: "custom-backdrops", name: "Custom Backdrops", price: 250.00 },
+      { id: "floral-arrangements", name: "Floral Arrangements", price: 120.00 },
+      { id: "table-settings", name: "Table Settings", price: 15.00 },
+      { id: "centerpieces", name: "Centerpieces", price: 50.00 },
+      { id: "lighting-av", name: "Lighting & AV", price: 300.00 },
+      { id: "theme-development", name: "Theme Development", price: 100.00 },
+      { id: "stage-tent-decor", name: "Stage & Tent Decor", price: 400.00 },
     ],
   },
   {
+    id: "furniture-seating",
     category: "Furniture & Seating",
     items: [
-      "Tables (Round, Banquet, Cocktail)",
-      "Chairs (Chiavari, Folding, Ghost)",
-      "Sofas & Lounge Furniture",
-      "Bar & Stools",
-      "High-Top Tables",
-      "Kids' Furniture",
-      "Specialty Seating",
+      { id: "tables", name: "Tables (Round, Banquet, Cocktail)", price: 25.00 },
+      { id: "chairs", name: "Chairs (Chiavari, Folding, Ghost)", price: 5.00 },
+      { id: "sofas-lounge", name: "Sofas & Lounge Furniture", price: 150.00 },
+      { id: "bar-stools", name: "Bar & Stools", price: 75.00 },
+      { id: "high-top-tables", name: "High-Top Tables", price: 30.00 },
+      { id: "kids-furniture", name: "Kids' Furniture", price: 10.00 },
+      { id: "specialty-seating", name: "Specialty Seating", price: 20.00 },
     ],
   },
   {
+    id: "tent-canopy-rentals",
     category: "Tent & Canopy Rentals",
     items: [
-      "Frame Tents",
-      "High-Peak Tents",
-      "Canopies",
-      "Tent Walls & Sidewalls",
-      "Tent Flooring",
-      "Heating & Cooling",
-      "Custom Tent Lighting",
+      { id: "frame-tents", name: "Frame Tents", price: 500.00 },
+      { id: "high-peak-tents", name: "High-Peak Tents", price: 700.00 },
+      { id: "canopies", name: "Canopies", price: 250.00 },
+      { id: "tent-walls", name: "Tent Walls & Sidewalls", price: 50.00 },
+      { id: "tent-flooring", name: "Tent Flooring", price: 150.00 },
+      { id: "heating-cooling", name: "Heating & Cooling", price: 100.00 },
+      { id: "custom-tent-lighting", name: "Custom Tent Lighting", price: 120.00 },
     ],
   },
   {
+    id: "tableware-linens",
     category: "Tableware & Linens",
     items: [
-      "Plate & Glassware",
-      "Flatware & Cutlery",
-      "Table Linens (Various fabrics)",
-      "Napkins & Chargers",
-      "Serving Dishes",
-      "Coffee & Tea Service",
-      "Specialty Linens",
+      { id: "plate-glassware", name: "Plate & Glassware", price: 2.00 },
+      { id: "flatware-cutlery", name: "Flatware & Cutlery", price: 1.50 },
+      { id: "table-linens", name: "Table Linens (Various fabrics)", price: 10.00 },
+      { id: "napkins-chargers", name: "Napkins & Chargers", price: 3.00 },
+      { id: "serving-dishes", name: "Serving Dishes", price: 8.00 },
+      { id: "coffee-tea-service", name: "Coffee & Tea Service", price: 25.00 },
+      { id: "specialty-linens", name: "Specialty Linens", price: 15.00 },
     ],
   },
   {
+    id: "entertainment-misc",
     category: "Entertainment & Misc.",
     items: [
-      "Audio Systems",
-      "Projectors & Screens",
-      "Photo Booths",
-      "Event Games",
-      "Mobile Bars",
-      "Portable Dance Floors",
-      "Generators & Power",
+      { id: "audio-systems", name: "Audio Systems", price: 150.00 },
+      { id: "projectors-screens", name: "Projectors & Screens", price: 75.00 },
+      { id: "photo-booths", name: "Photo Booths", price: 200.00 },
+      { id: "event-games", name: "Event Games", price: 50.00 },
+      { id: "mobile-bars", name: "Mobile Bars", price: 100.00 },
+      { id: "portable-dance-floors", name: "Portable Dance Floors", price: 250.00 },
+      { id: "generators-power", name: "Generators & Power", price: 80.00 },
     ],
   },
 ];
 
-const Services = () => (
-  <div className="container mx-auto px-4 py-20">
-    <div className="bg-white p-8 rounded-xl shadow-lg">
-      <h2 className="text-4xl font-bold text-center text-indigo-600 mb-12">Our Services</h2>
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {servicesData.map((category, index) => (
-          <div key={index} className="bg-gray-100 p-6 rounded-xl shadow-sm">
-            <h3 className="text-2xl font-semibold text-gray-800 mb-4">{category.category}</h3>
-            <ul className="space-y-2">
-              {category.items.map((service, idx) => (
-                <li key={idx} className="text-gray-600 list-disc ml-4">{service}</li>
-              ))}
-            </ul>
-          </div>
-        ))}
+const Services = () => {
+  const { addItemToCart } = useCart();
+  return (
+    <div className="container mx-auto px-4 py-20">
+      <div className="bg-white p-8 rounded-xl shadow-lg">
+        <h2 className="text-4xl font-bold text-center text-indigo-600 mb-12">Our Services</h2>
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {servicesData.map((category) => (
+            <div key={category.id} className="bg-gray-100 p-6 rounded-xl shadow-sm">
+              <h3 className="text-2xl font-semibold text-gray-800 mb-4">{category.category}</h3>
+              <ul className="space-y-4">
+                {category.items.map((service) => (
+                  <li key={service.id} className="flex items-center justify-between">
+                    <div className="flex-grow">
+                      <p className="text-gray-600">{service.name}</p>
+                      <p className="text-sm font-semibold text-gray-800">${service.price.toFixed(2)}</p>
+                    </div>
+                    <button
+                      onClick={() => addItemToCart(service)}
+                      className="ml-4 px-3 py-1 bg-indigo-600 text-white text-sm rounded-full hover:bg-indigo-700 transition"
+                    >
+                      Add to Cart
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 // --- Gallery Page ---
 const Gallery = () => {
@@ -401,33 +559,82 @@ const Gallery = () => {
 };
 
 // --- Contact Us Page ---
-const ContactUs = () => (
-  <div className="container mx-auto px-4 py-20">
-    <div className="bg-white p-8 rounded-xl shadow-lg flex flex-col md:flex-row gap-8">
-      <div className="md:w-1/2">
-        <h2 className="text-4xl font-bold text-indigo-600 mb-6">Contact Us</h2>
-        <p className="text-lg text-gray-600 mb-4">
-          Ready to start planning your event? Reach out to us today and let's bring your vision to life.
-        </p>
-        <p className="text-gray-600 font-semibold">Email:</p>
-        <a href="mailto:tadriels24@gmail.com" className="text-indigo-600 hover:underline">tadriels24@gmail.com</a>
-        <p className="text-gray-600 mt-4 font-semibold">Phone:</p>
-        <p className="text-gray-600">+1 365-384-0161</p>
-      </div>
-      <div className="md:w-1/2">
-        <h3 className="text-2xl font-bold text-gray-800 mb-4">Send us a message</h3>
-        <form className="space-y-4">
-          <input type="text" placeholder="Your Name" className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" />
-          <input type="email" placeholder="Your Email" className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" />
-          <textarea placeholder="Your Message" rows="4" className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"></textarea>
-          <button type="submit" className="w-full px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition duration-300">
-            Submit
-          </button>
-        </form>
+const ContactUs = () => {
+  const form = useRef();
+  const [status, setStatus] = useState('');
+  const [isEmailJsLoaded, setIsEmailJsLoaded] = useState(false);
+
+  useEffect(() => {
+    // Dynamically load the EmailJS script from CDN
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js';
+    script.onload = () => {
+      window.emailjs.init('7jYqEhkLxexQnPO3z'); // Initialize EmailJS with your public key
+      setIsEmailJsLoaded(true);
+    };
+    script.onerror = () => {
+      console.error('Failed to load EmailJS script.');
+    };
+    document.body.appendChild(script);
+
+    return () => {
+      // Clean up the script tag when the component unmounts
+      document.body.removeChild(script);
+    };
+  }, []);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!isEmailJsLoaded) {
+      setStatus('Email service not ready. Please try again in a moment.');
+      return;
+    }
+    setStatus('Sending...');
+
+    // These are the credentials you provided
+    const SERVICE_ID = 'service_bzuwfpo';
+    const TEMPLATE_ID = 'template_pzsdi9s';
+
+    window.emailjs.sendForm(SERVICE_ID, TEMPLATE_ID, form.current)
+      .then((result) => {
+        console.log('SUCCESS!', result.text);
+        setStatus('Message sent successfully!');
+        form.current.reset();
+      }, (error) => {
+        console.log('FAILED...', error.text);
+        setStatus('Failed to send message. Please try again.');
+      });
+  };
+
+  return (
+    <div className="container mx-auto px-4 py-20">
+      <div className="bg-white p-8 rounded-xl shadow-lg flex flex-col md:flex-row gap-8">
+        <div className="md:w-1/2">
+          <h2 className="text-4xl font-bold text-indigo-600 mb-6">Contact Us</h2>
+          <p className="text-lg text-gray-600 mb-4">
+            Ready to start planning your event? Reach out to us today and let's bring your vision to life.
+          </p>
+          <p className="text-gray-600 font-semibold">Email:</p>
+          <p className="text-gray-600">tadriels24@gmail.com</p>
+          <p className="text-gray-600 mt-4 font-semibold">Phone:</p>
+          <p className="text-gray-600">+1 365-384-0161</p>
+        </div>
+        <div className="md:w-1/2">
+          <h3 className="text-2xl font-bold text-gray-800 mb-4">Send us a message</h3>
+          <form ref={form} onSubmit={handleSubmit} className="space-y-4">
+            <input type="text" name="user_name" placeholder="Your Name" className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" required />
+            <input type="email" name="user_email" placeholder="Your Email" className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" required />
+            <textarea name="message" placeholder="Your Message" rows="4" className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" required></textarea>
+            <button type="submit" className="w-full px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition duration-300">
+              {isEmailJsLoaded ? (status === 'Sending...' ? 'Sending...' : 'Submit') : 'Loading service...'}
+            </button>
+            {status && <p className="text-center text-sm mt-2">{status}</p>}
+          </form>
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 // Live Chat Box component
 const LiveChatBox = ({ onClose }) => {
@@ -512,5 +719,3 @@ style.innerHTML = `
 document.head.appendChild(style);
 
 export default App;
-
-
